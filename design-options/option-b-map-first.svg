@@ -1,0 +1,46 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="390" y2="844" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8F1FF"/>
+      <stop offset="1" stop-color="#F7FAFC"/>
+    </linearGradient>
+  </defs>
+  <rect width="390" height="844" rx="24" fill="url(#bg)"/>
+  <rect x="0" y="0" width="390" height="88" fill="#FFFFFF"/>
+  <circle cx="34" cy="44" r="14" stroke="#6B7280" stroke-width="2"/>
+  <rect x="154" y="24" width="82" height="40" rx="20" fill="#0A3A8A"/>
+  <text x="195" y="49" text-anchor="middle" fill="#fff" font-size="16" font-family="Arial" font-weight="700">Spacely</text>
+  <circle cx="356" cy="44" r="14" stroke="#6B7280" stroke-width="2"/>
+
+  <rect x="16" y="102" width="358" height="58" rx="14" fill="#0B5FFF"/>
+  <text x="338" y="136" text-anchor="end" fill="#fff" font-size="18" font-family="Arial" font-weight="700">איתור חניה חכם</text>
+  <text x="40" y="136" fill="#BFDBFE" font-size="14" font-family="Arial">הרכב: יונדאי IONIQ</text>
+
+  <rect x="16" y="170" width="358" height="330" rx="20" fill="#E5E7EB" stroke="#93C5FD" stroke-width="2"/>
+  <rect x="16" y="170" width="358" height="38" rx="20" fill="#FFFFFF" fill-opacity="0.95"/>
+  <text x="338" y="194" text-anchor="end" fill="#111827" font-size="14" font-family="Arial" font-weight="700">מפת זמינות חניות</text>
+  <circle cx="138" cy="345" r="44" fill="#22C55E" opacity="0.9"/>
+  <text x="138" y="352" text-anchor="middle" fill="#fff" font-size="26" font-family="Arial" font-weight="700">158</text>
+  <circle cx="258" cy="300" r="24" fill="#10B981"/>
+  <text x="258" y="306" text-anchor="middle" fill="#fff" font-size="16" font-family="Arial" font-weight="700">34</text>
+  <circle cx="284" cy="392" r="18" fill="#84CC16"/>
+  <text x="284" y="398" text-anchor="middle" fill="#fff" font-size="13" font-family="Arial" font-weight="700">12</text>
+  <circle cx="84" cy="262" r="10" fill="#3B82F6" stroke="#fff" stroke-width="3"/>
+
+  <rect x="16" y="518" width="358" height="96" rx="18" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="2"/>
+  <text x="340" y="546" text-anchor="end" fill="#0A3A8A" font-size="20" font-family="Arial" font-weight="700">הכי קרוב אליך</text>
+  <text x="340" y="571" text-anchor="end" fill="#111827" font-size="22" font-family="Arial" font-weight="700">חניון קניון TLV</text>
+  <text x="340" y="594" text-anchor="end" fill="#6B7280" font-size="15" font-family="Arial">החשמונאים 96</text>
+  <rect x="26" y="538" width="58" height="58" rx="16" fill="#22C55E"/>
+  <text x="55" y="577" text-anchor="middle" fill="#fff" font-size="28" font-family="Arial" font-weight="700">61</text>
+  <text x="105" y="553" fill="#111827" font-size="24" font-family="Arial" font-weight="700">₪14</text>
+  <text x="105" y="574" fill="#6B7280" font-size="15" font-family="Arial">לשעה</text>
+
+  <rect x="16" y="626" width="358" height="186" rx="18" fill="#FFFFFF"/>
+  <text x="340" y="654" text-anchor="end" fill="#111827" font-size="20" font-family="Arial" font-weight="700">עוד חניונים קרובים</text>
+  <text x="340" y="682" text-anchor="end" fill="#111827" font-size="17" font-family="Arial">חניון רוטשילד · 27</text>
+  <text x="340" y="710" text-anchor="end" fill="#111827" font-size="17" font-family="Arial">חניון הבימה · 14</text>
+  <text x="340" y="738" text-anchor="end" fill="#111827" font-size="17" font-family="Arial">חניון שרתון · 9</text>
+  <rect x="24" y="764" width="342" height="36" rx="12" fill="#EEF2FF"/>
+  <text x="195" y="787" text-anchor="middle" fill="#2563EB" font-size="15" font-family="Arial" font-weight="700">החלף רכב / פילטרים מתקדמים</text>
+</svg>

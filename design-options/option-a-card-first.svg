@@ -1,0 +1,50 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="24" fill="#F3F5F8"/>
+  <rect x="0" y="0" width="390" height="88" fill="#FFFFFF"/>
+  <circle cx="34" cy="44" r="14" stroke="#6B7280" stroke-width="2"/>
+  <rect x="156" y="24" width="78" height="40" rx="8" fill="#0B5FFF"/>
+  <text x="195" y="49" text-anchor="middle" fill="#fff" font-size="16" font-family="Arial" font-weight="700">Spacely</text>
+  <circle cx="356" cy="44" r="14" stroke="#6B7280" stroke-width="2"/>
+
+  <rect x="16" y="104" width="358" height="68" rx="14" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <text x="340" y="131" text-anchor="end" fill="#111827" font-size="14" font-family="Arial" font-weight="700">מחפש חניה עם</text>
+  <text x="340" y="153" text-anchor="end" fill="#4B5563" font-size="16" font-family="Arial">טויוטה קורולה · 1234567</text>
+  <rect x="24" y="120" width="88" height="36" rx="10" fill="#EEF2FF"/>
+  <text x="68" y="143" text-anchor="middle" fill="#2563EB" font-size="14" font-family="Arial" font-weight="700">החלף רכב</text>
+
+  <rect x="16" y="184" width="358" height="240" rx="16" fill="#E5E7EB"/>
+  <rect x="16" y="184" width="358" height="40" rx="16" fill="#FFFFFF" fill-opacity="0.92"/>
+  <text x="340" y="210" text-anchor="end" fill="#111827" font-size="14" font-family="Arial" font-weight="700">מפה קרובה</text>
+  <circle cx="80" cy="290" r="24" fill="#22C55E"/>
+  <text x="80" y="296" text-anchor="middle" fill="#fff" font-size="16" font-family="Arial" font-weight="700">42</text>
+  <circle cx="210" cy="330" r="18" fill="#10B981"/>
+  <text x="210" y="335" text-anchor="middle" fill="#fff" font-size="14" font-family="Arial" font-weight="700">19</text>
+  <circle cx="290" cy="270" r="14" fill="#84CC16"/>
+  <text x="290" y="275" text-anchor="middle" fill="#fff" font-size="12" font-family="Arial" font-weight="700">8</text>
+
+  <text x="340" y="456" text-anchor="end" fill="#111827" font-size="26" font-family="Arial" font-weight="700">חניונים קרובים</text>
+
+  <rect x="16" y="474" width="358" height="88" rx="16" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <rect x="314" y="494" width="48" height="48" rx="12" fill="#22C55E"/>
+  <text x="338" y="525" text-anchor="middle" fill="#fff" font-size="24" font-family="Arial" font-weight="700">78</text>
+  <text x="294" y="510" text-anchor="end" fill="#111827" font-size="22" font-family="Arial" font-weight="700">חניון עזריאלי</text>
+  <text x="294" y="535" text-anchor="end" fill="#6B7280" font-size="16" font-family="Arial">דרך מנחם בגין 132</text>
+  <text x="44" y="514" fill="#111827" font-size="26" font-family="Arial" font-weight="700">₪15</text>
+  <text x="42" y="535" fill="#6B7280" font-size="16" font-family="Arial">לשעה</text>
+
+  <rect x="16" y="572" width="358" height="88" rx="16" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <rect x="314" y="592" width="48" height="48" rx="12" fill="#22C55E"/>
+  <text x="338" y="623" text-anchor="middle" fill="#fff" font-size="24" font-family="Arial" font-weight="700">45</text>
+  <text x="294" y="608" text-anchor="end" fill="#111827" font-size="22" font-family="Arial" font-weight="700">חניון דיזנגוף</text>
+  <text x="294" y="633" text-anchor="end" fill="#6B7280" font-size="16" font-family="Arial">דיזנגוף 50</text>
+  <text x="44" y="612" fill="#111827" font-size="26" font-family="Arial" font-weight="700">₪12</text>
+  <text x="42" y="633" fill="#6B7280" font-size="16" font-family="Arial">לשעה</text>
+
+  <rect x="16" y="670" width="358" height="88" rx="16" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <rect x="314" y="690" width="48" height="48" rx="12" fill="#F59E0B"/>
+  <text x="338" y="721" text-anchor="middle" fill="#fff" font-size="24" font-family="Arial" font-weight="700">6</text>
+  <text x="294" y="706" text-anchor="end" fill="#111827" font-size="22" font-family="Arial" font-weight="700">חניון שרונה</text>
+  <text x="294" y="731" text-anchor="end" fill="#6B7280" font-size="16" font-family="Arial">אלוף קלמן מגן 3</text>
+  <text x="44" y="710" fill="#111827" font-size="26" font-family="Arial" font-weight="700">₪18</text>
+  <text x="42" y="731" fill="#6B7280" font-size="16" font-family="Arial">לשעה</text>
+</svg>
