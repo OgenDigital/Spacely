@@ -170,7 +170,6 @@ function renderVehicleInputFields(vehicle = null) {
   const size = String(vehicle?.vehicle_size || "regular");
   const specialConditions = Array.isArray(vehicle?.special_conditions) ? vehicle.special_conditions : [];
   const isElectric = Boolean(vehicle?.is_electric);
-  const isDefault = Boolean(vehicle?.is_default);
   const nickname = String(vehicle?.nickname || "");
   const license = String(vehicle?.license_plate || "");
   const vehicleId = String(vehicle?.id || "");
@@ -188,7 +187,6 @@ function renderVehicleInputFields(vehicle = null) {
       <label><input type="checkbox" name="is_electric" ${isElectric ? "checked" : ""} /> ${t("electric")}</label>
       <label><input type="checkbox" name="special_conditions" value="stroller" ${specialConditions.includes("stroller") ? "checked" : ""} /> ${t("cond_stroller")}</label>
     </div>
-    <label><input type="checkbox" name="is_default" ${isDefault ? "checked" : ""} /> ${t("set_default")}</label>
     <input name="nickname" placeholder="${t("nickname")}" value="${nickname}" />
   `;
 }
@@ -585,12 +583,12 @@ const I18N = {
     switch_mode: "Switch Mode",
     reset: "Reset",
     lpr_existing_session: "You already have an active/assigned parking session.",
-    lpr_no_default_vehicle: "Set a default vehicle first.",
-    default_vehicle_set_in_profile: "No default vehicle is set. Please set one in Profile > Vehicle Management.",
+    lpr_no_default_vehicle: "Add at least one vehicle first.",
+    default_vehicle_set_in_profile: "Add at least one vehicle in Profile > Vehicle Management.",
     lpr_lot_inactive: "Selected parking lot is not active.",
     lpr_no_spot: "No suitable spot available.",
     fill_required: "Please fill all required fields.",
-    default_vehicle_required: "Default vehicle is required.",
+    default_vehicle_required: "At least one vehicle is required.",
     reservation_no_spot: "No suitable spot for reservation.",
     issue_required: "Issue type and description are required.",
     reset_confirm: "Reset demo data?",
@@ -758,7 +756,9 @@ const I18N = {
     vehicle_saved: "Vehicle saved.",
     auth_required_action: "To start or reserve parking, please sign in with your phone number.",
     auth_profile_required: "Complete your personal details before starting parking.",
-    auth_vehicle_required: "Add a default vehicle before starting parking.",
+    auth_vehicle_required: "Add at least one vehicle before starting parking.",
+    auth_vehicle_picker_title: "Choose vehicle:",
+    auth_vehicle_picker_invalid: "Invalid vehicle selection.",
     auth_service_unavailable: "Authentication service is currently unavailable.",
     auth_invalid_phone: "Enter a valid Israeli phone number.",
     auth_invalid_otp: "Enter a valid 6-digit code.",
@@ -986,12 +986,12 @@ const I18N = {
     switch_mode: "החלפת מצב",
     reset: "איפוס",
     lpr_existing_session: "יש לך כבר סשן חניה פעיל/מוקצה.",
-    lpr_no_default_vehicle: "יש להגדיר רכב ברירת מחדל קודם.",
-    default_vehicle_set_in_profile: "לא הוגדר רכב ברירת מחדל. נא להגדיר בפרופיל > ניהול רכבים.",
+    lpr_no_default_vehicle: "יש להוסיף לפחות רכב אחד קודם.",
+    default_vehicle_set_in_profile: "יש להוסיף לפחות רכב אחד בפרופיל > ניהול רכבים.",
     lpr_lot_inactive: "החניון שנבחר אינו פעיל כרגע.",
     lpr_no_spot: "לא נמצא מקום מתאים כרגע.",
     fill_required: "יש למלא את כל השדות החובה.",
-    default_vehicle_required: "נדרש רכב ברירת מחדל.",
+    default_vehicle_required: "נדרש לפחות רכב אחד.",
     reservation_no_spot: "לא נמצא מקום מתאים להזמנה.",
     issue_required: "יש לבחור סוג תקלה ולמלא תיאור.",
     reset_confirm: "לאפס את נתוני הדמו?",
@@ -1159,7 +1159,9 @@ const I18N = {
     vehicle_saved: "פרטי הרכב נשמרו.",
     auth_required_action: "כדי להפעיל או לשמור חניה צריך להתחבר עם מספר טלפון.",
     auth_profile_required: "יש להשלים פרטים אישיים לפני הפעלת חניה.",
-    auth_vehicle_required: "יש להוסיף רכב ברירת מחדל לפני הפעלת חניה.",
+    auth_vehicle_required: "יש להוסיף לפחות רכב אחד לפני הפעלת חניה.",
+    auth_vehicle_picker_title: "בחר רכב:",
+    auth_vehicle_picker_invalid: "בחירת רכב לא תקינה.",
     auth_service_unavailable: "שירות האימות אינו זמין כרגע.",
     auth_invalid_phone: "יש להזין מספר טלפון ישראלי תקין.",
     auth_invalid_otp: "יש להזין קוד אימות בן 6 ספרות.",
@@ -1336,12 +1338,12 @@ function updateOnboardingState() {
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(profile.email || "").trim())
   );
   const owned = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
-  const hasDefaultVehicle = owned.some((v) => v.is_default);
+  const hasAnyVehicle = owned.length > 0;
   const prev = appState.onboarding || {};
   appState.onboarding = {
     needsProfile: !hasProfile,
-    needsVehicle: !hasDefaultVehicle,
-    completed: hasProfile && hasDefaultVehicle,
+    needsVehicle: !hasAnyVehicle,
+    completed: hasProfile && hasAnyVehicle,
     homeTourSeen,
     tourActive: Boolean(prev.tourActive) && !homeTourSeen,
     tourStep: Number.isFinite(prev.tourStep) ? prev.tourStep : 0,
@@ -1366,11 +1368,11 @@ function getOnboardingChecklist() {
   const emailOk = Boolean(user?.email && isValidEmail(user.email));
   const profileOk = fullNameOk && emailOk;
   const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
-  const defaultOk = vehicles.some((v) => v.is_default);
+  const vehicleOk = vehicles.length > 0;
   return {
     profileOk,
-    vehicleOk: defaultOk,
-    canComplete: profileOk && defaultOk,
+    vehicleOk,
+    canComplete: profileOk && vehicleOk,
   };
 }
 
@@ -2777,6 +2779,33 @@ function getSearchVehicle() {
   const first = vehicles[0] || null;
   if (first) appState.searchVehicleId = first.id;
   return first;
+}
+
+function getAnyActiveVehicle() {
+  const uid = getCurrentUid();
+  if (!uid) return null;
+  const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+  if (!vehicles.length) return null;
+  return vehicles.find((v) => v.is_default) || vehicles[0];
+}
+
+function promptVehicleForManualParking() {
+  const uid = getCurrentUid();
+  if (!uid) return null;
+  const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+  if (!vehicles.length) return null;
+  if (vehicles.length === 1) return vehicles[0];
+  const options = vehicles
+    .map((vehicle, index) => `${index + 1}. ${vehicleDisplayName(vehicle) || t("vehicle")} • ${vehicle.license_plate}`)
+    .join("\n");
+  const input = window.prompt(`${t("auth_vehicle_picker_title")}\n\n${options}`);
+  if (input == null) return null;
+  const selectedIndex = Number(String(input).trim());
+  if (!Number.isFinite(selectedIndex) || selectedIndex < 1 || selectedIndex > vehicles.length) {
+    alert(t("auth_vehicle_picker_invalid"));
+    return null;
+  }
+  return vehicles[selectedIndex - 1];
 }
 
 function distanceMeters(a, b) {
@@ -4327,7 +4356,7 @@ const appActions = {
       render();
       return;
     }
-    const vehicle = getDefaultVehicle();
+    const vehicle = isSingleSpotSupplySegment(lot) ? promptVehicleForManualParking() : getAnyActiveVehicle();
     if (!vehicle) {
       appState.reserveConfirmOpen = false;
       appActions.requireDefaultVehicleInProfile();
@@ -4494,6 +4523,8 @@ const appActions = {
   },
 
   startParkingAtLot(lotId) {
+    const lot = getLotById(lotId);
+    if (!lot) return;
     const guard = canStartOrReserve();
     if (!guard.ok && guard.reason !== "existing_active") {
       alert(authGuardMessage(guard.reason));
@@ -4509,10 +4540,16 @@ const appActions = {
       render();
       return;
     }
+    if (isSingleSpotSupplySegment(lot)) {
+      const selectedVehicle = promptVehicleForManualParking();
+      if (!selectedVehicle) return;
+      appActions.simulateLprEntry(lotId, selectedVehicle.id);
+      return;
+    }
     appActions.simulateLprEntry(lotId);
   },
 
-  simulateLprEntry(lotId) {
+  simulateLprEntry(lotId, forcedVehicleId = null) {
     const uid = getCurrentUid();
     const guard = canStartOrReserve();
     if (!uid || (!guard.ok && guard.reason !== "existing_active")) {
@@ -4561,16 +4598,20 @@ const appActions = {
       render();
       return;
     }
-    const vehicle = getDefaultVehicle();
-    if (!vehicle) {
-      appActions.requireDefaultVehicleInProfile();
-      return;
-    }
     const lot = getLotById(lotId);
     if (!lot || lot.status !== "active") {
       return;
     }
     const segment = lotSegmentType(lot);
+    const vehicle = forcedVehicleId
+      ? appState.data.vehicles.find((v) => v.id === forcedVehicleId && v.owner_id === uid && v.is_active)
+      : segment === "structured"
+        ? getAnyActiveVehicle()
+        : getAnyActiveVehicle();
+    if (!vehicle) {
+      appActions.requireDefaultVehicleInProfile();
+      return;
+    }
     const isStructured = segment === "structured";
     if (holdReservation && holdReservation.parking_lot_id === lotId) {
       const heldSpot = appState.data.parkingSpots.find((s) => s.id === holdReservation.spot_id);
@@ -5040,7 +5081,6 @@ const appActions = {
     }
     const manufacturer = String(fd.get("manufacturer") || "").trim();
     const color = String(fd.get("color") || "white").trim().toLowerCase();
-    const requestedDefault = fd.get("is_default") === "on";
     const editingId = String(fd.get("vehicle_id") || "").trim();
     const existingVehicle = editingId
       ? appState.data.vehicles.find((v) => v.id === editingId && v.owner_id === userUid && v.is_active)
@@ -5058,8 +5098,8 @@ const appActions = {
       special_conditions: fd.getAll("special_conditions"),
       is_active: true,
       is_default: existingVehicle
-        ? requestedDefault
-        : requestedDefault || appState.data.vehicles.filter((v) => v.owner_id === userUid && v.is_active).length === 0,
+        ? Boolean(existingVehicle.is_default)
+        : appState.data.vehicles.filter((v) => v.owner_id === userUid && v.is_active).length === 0,
       nickname: fd.get("nickname") || "",
     };
     if (existingVehicle) {
@@ -5078,6 +5118,15 @@ const appActions = {
           v.is_default = v.id === vehicle.id;
         });
       await vehicleService.setDefault(userUid, vehicle.id);
+    } else {
+      const defaultVehicle = appState.data.vehicles.find((v) => v.owner_id === userUid && v.is_active && v.is_default);
+      if (!defaultVehicle) {
+        const firstVehicle = appState.data.vehicles.find((v) => v.owner_id === userUid && v.is_active);
+        if (firstVehicle) {
+          firstVehicle.is_default = true;
+          await vehicleService.setDefault(userUid, firstVehicle.id);
+        }
+      }
     }
     updateOnboardingState();
     if (appState.onboarding.completed) {
@@ -5911,7 +5960,7 @@ function renderVehicles() {
                   <div class="muted">${v.is_electric ? t("electric") : t("fuel")} ${v.special_conditions.length ? `• ${v.special_conditions.map((c) => localizeStatus(c)).join(", ")}` : ""}</div>
                 </div>
                 <div>
-                  ${v.is_default ? `<span class="pill green">${t("default_vehicle")}</span>` : `<button class="btn" onclick="appActions.setDefaultVehicle('${v.id}')">${t("set_default")}</button>`}
+                  ${v.is_default ? `<span class="pill green">${t("default_vehicle")}</span>` : ""}
                 </div>
               </div>
             </div>`
@@ -6281,7 +6330,7 @@ function renderOnboardingSection() {
               <strong>${vehicleDisplayName(v)}</strong>
               <div>${v.license_plate}</div>
             </div>
-            <span class="pill ${v.is_default ? "green" : "blue"}">${v.is_default ? t("default_vehicle") : t("set_default")}</span>
+            ${v.is_default ? `<span class="pill green">${t("default_vehicle")}</span>` : ""}
           </button>`
                 )
                 .join("")
@@ -6398,7 +6447,7 @@ function renderProfileSectionContent(sectionOverride = null) {
                 <div>${v.license_plate}</div>
                 <div class="muted">${vehicleColorLabel(v.color)} • ${kind(v)}</div>
               </div>
-              <span class="pill ${v.is_default ? "green" : "blue"}">${v.is_default ? t("default_vehicle") : t("set_default")}</span>
+              ${v.is_default ? `<span class="pill green">${t("default_vehicle")}</span>` : ""}
             </button>`
           )
           .join("")}
