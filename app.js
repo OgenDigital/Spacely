@@ -1834,7 +1834,7 @@ const baseData = () => {
       default_pricing: { hourly_rate: 16, daily_max: 90, first_hour_rate: 12 },
       assignment_timeout_minutes: 10,
       reservation_grace_minutes: 15,
-      ui_language: "en",
+      ui_language: "he",
       ui_theme: "blue",
       profile_phone: "054-1234567",
       home_mode_default: "nearby",
@@ -2605,12 +2605,12 @@ function loadData() {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed.parkingLots) || parsed.parkingLots.length < 50) {
       const fresh = baseData();
-      fresh.settings.ui_language = parsed?.settings?.ui_language === "he" ? "he" : "en";
+      fresh.settings.ui_language = parsed?.settings?.ui_language === "en" ? "en" : "he";
       fresh.settings.ui_theme = parsed?.settings?.ui_theme || "blue";
       return fresh;
     }
     if (!parsed.settings) parsed.settings = {};
-    if (!parsed.settings.ui_language) parsed.settings.ui_language = "en";
+    if (!parsed.settings.ui_language) parsed.settings.ui_language = "he";
     if (!parsed.settings.ui_theme) parsed.settings.ui_theme = "blue";
     if (!parsed.settings.profile_phone) parsed.settings.profile_phone = "054-1234567";
     if (!parsed.settings.home_mode_default) parsed.settings.home_mode_default = "nearby";
