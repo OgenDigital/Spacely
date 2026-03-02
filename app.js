@@ -1276,6 +1276,50 @@ function setProfileSaveFeedback(status, message = "") {
   appState.profileSaveFeedback = { status: status || "idle", message: String(message || "") };
 }
 
+function dataUrlSizeBytes(dataUrl) {
+  const base64 = String(dataUrl || "").split(",")[1] || "";
+  return Math.ceil((base64.length * 3) / 4);
+}
+
+function loadImageFromDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("image_load_failed"));
+    img.src = dataUrl;
+  });
+}
+
+async function compressProfileImageDataUrl(dataUrl, maxBytes = 280000) {
+  if (!dataUrl) return "";
+  let result = String(dataUrl);
+  if (dataUrlSizeBytes(result) <= maxBytes) return result;
+  const img = await loadImageFromDataUrl(result);
+  let width = Number(img.naturalWidth || img.width || 0);
+  let height = Number(img.naturalHeight || img.height || 0);
+  if (!width || !height) return result;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return result;
+  const maxDimension = 900;
+  if (Math.max(width, height) > maxDimension) {
+    const scale = maxDimension / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  canvas.width = width;
+  canvas.height = height;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  let quality = 0.85;
+  result = canvas.toDataURL("image/jpeg", quality);
+  for (let i = 0; i < 8 && dataUrlSizeBytes(result) > maxBytes; i += 1) {
+    quality = Math.max(0.38, quality - 0.08);
+    result = canvas.toDataURL("image/jpeg", quality);
+  }
+  return result;
+}
+
 function updateOnboardingState() {
   const uid = getCurrentUid();
   const homeTourSeen = Boolean(appState?.data?.settings?.onboarding_home_tour_seen);
@@ -3515,14 +3559,19 @@ const appActions = {
       if (inputEl) inputEl.value = "";
     };
     reader.onload = async () => {
-      const src = String(reader.result || "");
-      if (!src) {
+      const rawSrc = String(reader.result || "");
+      if (!rawSrc) {
         setProfileUploadFeedback("error", t("profile_image_upload_failed"), 0);
         render();
         if (inputEl) inputEl.value = "";
         return;
       }
       try {
+        setProfileUploadFeedback("uploading", `${t("profile_image_uploading")} 70%`, 70);
+        render();
+        const src = await compressProfileImageDataUrl(rawSrc);
+        setProfileUploadFeedback("uploading", `${t("profile_image_uploading")} 90%`, 90);
+        render();
         const user = appState.data.users.find((u) => u.id === uid);
         if (user) user.avatar_url = src;
         appState.profileAvatarPreview = src;
@@ -3537,8 +3586,9 @@ const appActions = {
         persist();
         setProfileUploadFeedback("success", t("profile_image_saved"), 100);
         render();
-      } catch {
-        setProfileUploadFeedback("error", t("profile_image_upload_failed"), 0);
+      } catch (error) {
+        const code = String(error?.code || error?.message || "");
+        setProfileUploadFeedback("error", `${t("profile_image_upload_failed")} ${code ? `(${code})` : ""}`.trim(), 0);
         render();
       } finally {
         if (tempObjectUrl) URL.revokeObjectURL(tempObjectUrl);
