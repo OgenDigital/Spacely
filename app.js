@@ -759,6 +759,9 @@ const I18N = {
     auth_vehicle_required: "Add at least one vehicle before starting parking.",
     auth_vehicle_picker_title: "Choose vehicle:",
     auth_vehicle_picker_invalid: "Invalid vehicle selection.",
+    vehicle_picker_title: "Choose vehicle",
+    vehicle_picker_subtitle: "Choose which vehicle you want to use for this parking action.",
+    vehicle_picker_confirm: "Continue",
     auth_service_unavailable: "Authentication service is currently unavailable.",
     auth_invalid_phone: "Enter a valid Israeli phone number.",
     auth_invalid_otp: "Enter a valid 6-digit code.",
@@ -1162,6 +1165,9 @@ const I18N = {
     auth_vehicle_required: "יש להוסיף לפחות רכב אחד לפני הפעלת חניה.",
     auth_vehicle_picker_title: "בחר רכב:",
     auth_vehicle_picker_invalid: "בחירת רכב לא תקינה.",
+    vehicle_picker_title: "בחר רכב לפעולה",
+    vehicle_picker_subtitle: "בחר את הרכב שעבורו תרצה לשמור או להפעיל חניה.",
+    vehicle_picker_confirm: "המשך",
     auth_service_unavailable: "שירות האימות אינו זמין כרגע.",
     auth_invalid_phone: "יש להזין מספר טלפון ישראלי תקין.",
     auth_invalid_otp: "יש להזין קוד אימות בן 6 ספרות.",
@@ -2081,6 +2087,12 @@ const appState = {
   releaseConfirmOpen: false,
   reserveConfirmOpen: false,
   reserveLotId: null,
+  vehiclePicker: {
+    open: false,
+    lotId: null,
+    action: null,
+    selectedVehicleId: null,
+  },
   homeUnifiedMode: true,
   homeCarouselIndex: 0,
   homeSelectedLotId: null,
@@ -2789,25 +2801,6 @@ function getAnyActiveVehicle() {
   return vehicles.find((v) => v.is_default) || vehicles[0];
 }
 
-function promptVehicleForManualParking() {
-  const uid = getCurrentUid();
-  if (!uid) return null;
-  const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
-  if (!vehicles.length) return null;
-  if (vehicles.length === 1) return vehicles[0];
-  const options = vehicles
-    .map((vehicle, index) => `${index + 1}. ${vehicleDisplayName(vehicle) || t("vehicle")} • ${vehicle.license_plate}`)
-    .join("\n");
-  const input = window.prompt(`${t("auth_vehicle_picker_title")}\n\n${options}`);
-  if (input == null) return null;
-  const selectedIndex = Number(String(input).trim());
-  if (!Number.isFinite(selectedIndex) || selectedIndex < 1 || selectedIndex > vehicles.length) {
-    alert(t("auth_vehicle_picker_invalid"));
-    return null;
-  }
-  return vehicles[selectedIndex - 1];
-}
-
 function distanceMeters(a, b) {
   if (!a || !b) return Number.MAX_SAFE_INTEGER;
   const toRad = (x) => (x * Math.PI) / 180;
@@ -3237,6 +3230,7 @@ const appActions = {
     appState.activeSheet = null;
     appState.releaseConfirmOpen = false;
     appState.reserveConfirmOpen = false;
+    appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
     appState.issueMenuOpen = false;
     if (page !== "profile") appState.profileSection = "menu";
     if (page === "profile" && appState.auth.status === "signed_in" && !appState.onboarding.completed) {
@@ -3493,6 +3487,7 @@ const appActions = {
       await authService.signOut();
     } finally {
       appState.auth.loading = false;
+      appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
       render();
     }
   },
@@ -4281,6 +4276,59 @@ const appActions = {
     render();
   },
 
+  openVehiclePicker(lotId, actionType) {
+    const uid = getCurrentUid();
+    if (!uid) return;
+    const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+    if (!vehicles.length) {
+      appActions.requireDefaultVehicleInProfile();
+      return;
+    }
+    const preferred = vehicles.find((v) => v.is_default) || vehicles[0];
+    appState.vehiclePicker = {
+      open: true,
+      lotId: lotId || null,
+      action: actionType || "start",
+      selectedVehicleId: preferred?.id || null,
+    };
+    render();
+  },
+
+  closeVehiclePicker() {
+    appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
+    render();
+  },
+
+  selectVehicleInPicker(vehicleId) {
+    if (!appState.vehiclePicker?.open) return;
+    appState.vehiclePicker.selectedVehicleId = vehicleId || null;
+    render();
+  },
+
+  confirmVehiclePicker() {
+    const picker = appState.vehiclePicker || {};
+    const lotId = picker.lotId;
+    const action = picker.action;
+    const vehicleId = picker.selectedVehicleId;
+    const uid = getCurrentUid();
+    if (!uid || !lotId || !action) {
+      appActions.closeVehiclePicker();
+      return;
+    }
+    const exists = appState.data.vehicles.some((v) => v.id === vehicleId && v.owner_id === uid && v.is_active);
+    if (!exists) {
+      alert(t("auth_vehicle_picker_invalid"));
+      return;
+    }
+    appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
+    if (action === "save") {
+      appState.reserveLotId = lotId;
+      appActions.confirmSaveParking(vehicleId);
+      return;
+    }
+    appActions.simulateLprEntry(lotId, vehicleId);
+  },
+
   releaseReservedParking() {
     const reservation = activeReservationHoldForUser();
     if (!reservation) {
@@ -4318,7 +4366,7 @@ const appActions = {
     render();
   },
 
-  confirmSaveParking() {
+  confirmSaveParking(selectedVehicleId = null) {
     const guard = canStartOrReserve();
     if (!guard.ok) {
       appState.reserveConfirmOpen = false;
@@ -4356,7 +4404,15 @@ const appActions = {
       render();
       return;
     }
-    const vehicle = isSingleSpotSupplySegment(lot) ? promptVehicleForManualParking() : getAnyActiveVehicle();
+    if (isSingleSpotSupplySegment(lot) && !selectedVehicleId) {
+      appState.reserveConfirmOpen = false;
+      appState.reserveLotId = lotId;
+      appActions.openVehiclePicker(lotId, "save");
+      return;
+    }
+    const vehicle = selectedVehicleId
+      ? appState.data.vehicles.find((v) => v.id === selectedVehicleId && v.owner_id === uid && v.is_active)
+      : getAnyActiveVehicle();
     if (!vehicle) {
       appState.reserveConfirmOpen = false;
       appActions.requireDefaultVehicleInProfile();
@@ -4541,9 +4597,7 @@ const appActions = {
       return;
     }
     if (isSingleSpotSupplySegment(lot)) {
-      const selectedVehicle = promptVehicleForManualParking();
-      if (!selectedVehicle) return;
-      appActions.simulateLprEntry(lotId, selectedVehicle.id);
+      appActions.openVehiclePicker(lotId, "start");
       return;
     }
     appActions.simulateLprEntry(lotId);
@@ -6658,6 +6712,42 @@ function renderReserveConfirmModal() {
   `;
 }
 
+function renderVehiclePickerModal() {
+  const picker = appState.vehiclePicker || {};
+  if (!picker.open) return "";
+  const uid = getCurrentUid();
+  const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+  if (!vehicles.length) return "";
+  const actionLabel = picker.action === "save" ? t("save_parking") : t("start_parking_manual");
+  return `
+    <div class="modal-backdrop" onclick="appActions.closeVehiclePicker()">
+      <div class="modal-card vehicle-picker-card" onclick="event.stopPropagation()">
+        <h3>${t("vehicle_picker_title")}</h3>
+        <p class="muted">${t("vehicle_picker_subtitle")}</p>
+        <div class="vehicle-picker-grid">
+          ${vehicles
+            .map((vehicle) => {
+              const selected = picker.selectedVehicleId === vehicle.id;
+              const icon = vehicle.is_electric ? "bolt" : "car";
+              return `
+                <button class="vehicle-picker-item ${selected ? "selected" : ""}" onclick="appActions.selectVehicleInPicker('${vehicle.id}')">
+                  <span class="vehicle-picker-icon ${vehicle.is_electric ? "electric" : ""}">${navIcon(icon)}</span>
+                  <strong>${vehicleDisplayName(vehicle) || t("vehicle")}</strong>
+                  <small>${vehicle.license_plate}</small>
+                </button>
+              `;
+            })
+            .join("")}
+        </div>
+        <div class="row vehicle-picker-actions">
+          <button class="btn" onclick="appActions.closeVehiclePicker()">${t("cancel")}</button>
+          <button class="btn primary" onclick="appActions.confirmVehiclePicker()">${t("vehicle_picker_confirm")} • ${actionLabel}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderAdminDashboard() {
   const activeSessions = appState.data.parkingSessions.filter((s) => ["active", "assigned"].includes(s.status)).length;
   const openIssues = appState.data.issueReports.filter((i) => ["new", "in_progress"].includes(i.status)).length;
@@ -7240,6 +7330,7 @@ function render() {
       ${appState.mode === "driver" ? renderDriverSheet() : ""}
       ${appState.releaseConfirmOpen ? renderReleaseConfirmModal() : ""}
       ${appState.reserveConfirmOpen ? renderReserveConfirmModal() : ""}
+      ${appState.vehiclePicker?.open ? renderVehiclePickerModal() : ""}
       <datalist id="vehicle-manufacturers-list">
         ${VEHICLE_MANUFACTURERS.map((m) => `<option value="${m}"></option>`).join("")}
       </datalist>
