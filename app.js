@@ -4364,7 +4364,15 @@ const appActions = {
   confirmPendingParkingStart() {
     const lotId = appState.pendingParkingStart?.lotId;
     const uid = getCurrentUid();
-    if (!lotId || !uid) return;
+    if (!lotId || !uid) {
+      alert(t("pending_start_failed"));
+      return;
+    }
+    const lot = getLotById(lotId);
+    if (!lot) {
+      alert(t("pending_start_failed"));
+      return;
+    }
     const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
     const fallbackVehicle = vehicles.find((v) => v.is_default) || vehicles[0] || null;
     const requestedVehicleId = appState.pendingParkingStart?.selectedVehicleId || fallbackVehicle?.id || null;
@@ -4372,21 +4380,33 @@ const appActions = {
       alert(t("auth_vehicle_required"));
       return;
     }
-    appActions.simulateLprEntry(lotId, requestedVehicleId, { targetPage: "active-parking" });
-    const session = activeSessionForUser();
-    if (session) {
-      appState.page = "active-parking";
-      render();
-      return;
-    }
-    const forced = appActions.forceStartSingleSpotSession(lotId, requestedVehicleId);
-    if (!forced) {
+    try {
+      // In single-spot segments we start directly from this screen.
+      if (isSingleSpotSupplySegment(lot)) {
+        const forced = appActions.forceStartSingleSpotSession(lotId, requestedVehicleId);
+        if (!forced) {
+          alert(t("pending_start_failed"));
+          render();
+          return;
+        }
+        appState.page = "active-parking";
+        render();
+        return;
+      }
+
+      appActions.simulateLprEntry(lotId, requestedVehicleId, { targetPage: "active-parking" });
+      const session = activeSessionForUser();
+      if (session) {
+        appState.page = "active-parking";
+        render();
+        return;
+      }
       alert(t("pending_start_failed"));
       render();
-      return;
+    } catch (error) {
+      alert(`${t("pending_start_failed")} (${String(error?.message || "unknown")})`);
+      render();
     }
-    appState.page = "active-parking";
-    render();
   },
 
   forceStartSingleSpotSession(lotId, vehicleId) {
