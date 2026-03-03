@@ -3247,7 +3247,7 @@ const appActions = {
     appState.releaseConfirmOpen = false;
     appState.reserveConfirmOpen = false;
     appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
-    if (page !== "active-parking") {
+    if (page !== "active-parking" && page !== "vehicle-start") {
       appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
     }
     appState.issueMenuOpen = false;
@@ -4666,7 +4666,7 @@ const appActions = {
       appState.pendingParkingStart = { lotId, selectedVehicleId: preferred?.id || null };
       appState.activeSheet = null;
       appState.lotModalId = null;
-      appState.page = "active-parking";
+      appState.page = "vehicle-start";
       render();
       return;
     }
@@ -5990,46 +5990,54 @@ function renderReservedParking() {
   `;
 }
 
+function renderVehicleStart() {
+  const uid = getCurrentUid();
+  const pendingStart = appState.pendingParkingStart || { lotId: null, selectedVehicleId: null };
+  const lot = pendingStart.lotId ? getLotById(pendingStart.lotId) : null;
+  const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+  if (!lot || !vehicles.length) {
+    appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
+    return `
+      <div class="card">
+        <h2>${t("pending_start_title")}</h2>
+        <p class="muted">${t("pending_start_failed")}</p>
+        <button class="btn" onclick="appActions.navigate('home')">${t("go_home")}</button>
+      </div>
+    `;
+  }
+  return `
+    <div class="card pending-start-card">
+      <h2>${t("pending_start_title")}</h2>
+      <div class="muted">${t("pending_start_subtitle")}</div>
+      <div class="pending-start-lot">${lot.name} • ${lot.address}</div>
+      <div class="vehicle-picker-grid">
+        ${vehicles
+          .map((vehicle) => {
+            const selected = pendingStart.selectedVehicleId === vehicle.id;
+            const icon = vehicle.is_electric ? "bolt" : "car";
+            return `
+              <button class="vehicle-picker-item ${selected ? "selected" : ""}" onclick="appActions.selectPendingStartVehicle('${vehicle.id}')">
+                <span class="vehicle-picker-icon ${vehicle.is_electric ? "electric" : ""}">${navIcon(icon)}</span>
+                <strong>${vehicleDisplayName(vehicle) || t("vehicle")}</strong>
+                <small>${vehicle.license_plate}</small>
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+      <div class="row vehicle-picker-actions">
+        <button class="btn" onclick="appActions.cancelPendingParkingStart()">${t("pending_start_cancel")}</button>
+        <button class="btn primary" onclick="appActions.confirmPendingParkingStart()">${t("pending_start_confirm")}</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderActiveParking() {
   checkTimeouts();
   const uid = getCurrentUid();
   const session = activeSessionForUser();
-  const pendingStart = appState.pendingParkingStart || { lotId: null, selectedVehicleId: null };
   if (!session) {
-    if (pendingStart.lotId) {
-      const lot = getLotById(pendingStart.lotId);
-      const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
-      if (!lot || !vehicles.length) {
-        appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
-      } else {
-        return `
-          <div class="card pending-start-card">
-            <h2>${t("pending_start_title")}</h2>
-            <div class="muted">${t("pending_start_subtitle")}</div>
-            <div class="pending-start-lot">${lot.name} • ${lot.address}</div>
-            <div class="vehicle-picker-grid">
-              ${vehicles
-                .map((vehicle) => {
-                  const selected = pendingStart.selectedVehicleId === vehicle.id;
-                  const icon = vehicle.is_electric ? "bolt" : "car";
-                  return `
-                    <button class="vehicle-picker-item ${selected ? "selected" : ""}" onclick="appActions.selectPendingStartVehicle('${vehicle.id}')">
-                      <span class="vehicle-picker-icon ${vehicle.is_electric ? "electric" : ""}">${navIcon(icon)}</span>
-                      <strong>${vehicleDisplayName(vehicle) || t("vehicle")}</strong>
-                      <small>${vehicle.license_plate}</small>
-                    </button>
-                  `;
-                })
-                .join("")}
-            </div>
-            <div class="row vehicle-picker-actions">
-              <button class="btn" onclick="appActions.cancelPendingParkingStart()">${t("pending_start_cancel")}</button>
-              <button class="btn primary" onclick="appActions.confirmPendingParkingStart()">${t("pending_start_confirm")}</button>
-            </div>
-          </div>
-        `;
-      }
-    }
     const activeReservation = appState.data.reservations.find((r) => r.user_id === uid && r.status === "confirmed");
     return `
       <div class="card">
@@ -7125,6 +7133,8 @@ function renderDriverContent() {
       return renderLotDetails();
     case "active-parking":
       return renderActiveParking();
+    case "vehicle-start":
+      return renderVehicleStart();
     case "notifications":
       return renderNotifications();
     case "favorites":
