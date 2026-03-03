@@ -767,6 +767,7 @@ const I18N = {
     pending_start_confirm: "Start now",
     pending_start_cancel: "Back to parking",
     active_vehicle_label: "Active vehicle",
+    pending_start_failed: "Could not start parking. Please try another spot.",
     auth_service_unavailable: "Authentication service is currently unavailable.",
     auth_invalid_phone: "Enter a valid Israeli phone number.",
     auth_invalid_otp: "Enter a valid 6-digit code.",
@@ -1178,6 +1179,7 @@ const I18N = {
     pending_start_confirm: "התחל עכשיו",
     pending_start_cancel: "חזרה לחניה",
     active_vehicle_label: "רכב פעיל",
+    pending_start_failed: "לא הצלחנו להתחיל חניה. נסה חניה אחרת.",
     auth_service_unavailable: "שירות האימות אינו זמין כרגע.",
     auth_invalid_phone: "יש להזין מספר טלפון ישראלי תקין.",
     auth_invalid_otp: "יש להזין קוד אימות בן 6 ספרות.",
@@ -4354,9 +4356,24 @@ const appActions = {
 
   confirmPendingParkingStart() {
     const lotId = appState.pendingParkingStart?.lotId;
-    const vehicleId = appState.pendingParkingStart?.selectedVehicleId;
-    if (!lotId || !vehicleId) return;
-    appActions.simulateLprEntry(lotId, vehicleId, { targetPage: "active-parking" });
+    const uid = getCurrentUid();
+    if (!lotId || !uid) return;
+    const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+    const fallbackVehicle = vehicles.find((v) => v.is_default) || vehicles[0] || null;
+    const requestedVehicleId = appState.pendingParkingStart?.selectedVehicleId || fallbackVehicle?.id || null;
+    if (!requestedVehicleId) {
+      alert(t("auth_vehicle_required"));
+      return;
+    }
+    appActions.simulateLprEntry(lotId, requestedVehicleId, { targetPage: "active-parking" });
+    const session = activeSessionForUser();
+    if (session) {
+      appState.page = "active-parking";
+      render();
+      return;
+    }
+    alert(t("pending_start_failed"));
+    render();
   },
 
   cancelPendingParkingStart() {
