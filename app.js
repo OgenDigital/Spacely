@@ -4533,8 +4533,8 @@ const appActions = {
       render();
       return;
     }
-    const uid = getCurrentUid();
-    if (!uid) return;
+    const userUid = getCurrentUid();
+    if (!userUid) return;
     const lotId = appState.reserveLotId || appState.selectedLotId;
     const lot = getLotById(lotId);
     if (!lot || lot.status !== "active") return;
@@ -4559,7 +4559,7 @@ const appActions = {
       return;
     }
     const vehicle = selectedVehicleId
-      ? appState.data.vehicles.find((v) => v.id === selectedVehicleId && v.owner_id === uid && v.is_active)
+      ? appState.data.vehicles.find((v) => v.id === selectedVehicleId && v.owner_id === userUid && v.is_active)
       : getAnyActiveVehicle();
     if (!vehicle) {
       appState.reserveConfirmOpen = false;
@@ -4581,7 +4581,7 @@ const appActions = {
       parking_lot_id: lotId,
       spot_id: spot.id,
       vehicle_id: vehicle.id,
-      user_id: uid,
+      user_id: userUid,
       status: "confirmed",
       scheduled_start: now.toISOString(),
       scheduled_end: end.toISOString(),
@@ -4763,9 +4763,9 @@ const appActions = {
   },
 
   simulateLprEntry(lotId, forcedVehicleId = null, options = {}) {
-    const uid = getCurrentUid();
+    const userUid = getCurrentUid();
     const guard = canStartOrReserve();
-    if (!uid || (!guard.ok && guard.reason !== "existing_active")) {
+    if (!userUid || (!guard.ok && guard.reason !== "existing_active")) {
       alert(authGuardMessage(guard.reason));
       if (guard.reason === "profile_incomplete") {
         appState.page = "profile";
@@ -4818,7 +4818,7 @@ const appActions = {
     }
     const segment = lotSegmentType(lot);
     const vehicle = forcedVehicleId
-      ? appState.data.vehicles.find((v) => v.id === forcedVehicleId && v.owner_id === uid && v.is_active)
+      ? appState.data.vehicles.find((v) => v.id === forcedVehicleId && v.owner_id === userUid && v.is_active)
       : segment === "structured"
         ? getAnyActiveVehicle()
         : getAnyActiveVehicle();
@@ -4844,7 +4844,7 @@ const appActions = {
         parking_lot_id: lotId,
         spot_id: heldSpot.id,
         vehicle_id: vehicle.id,
-        user_id: uid,
+        user_id: userUid,
         license_plate: vehicle.license_plate,
         status: "active",
         is_guest: false,
@@ -4915,7 +4915,7 @@ const appActions = {
       parking_lot_id: lotId,
       spot_id: spot.id,
       vehicle_id: vehicle.id,
-      user_id: uid,
+      user_id: userUid,
       license_plate: vehicle.license_plate,
       status: "active",
       is_guest: false,
