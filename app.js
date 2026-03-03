@@ -3277,7 +3277,7 @@ const appActions = {
       appState.selectedLotId = context.lotId;
       appState.lotModalId = null;
       appState.activeSheet = null;
-      appState.page = "parking-lot-details";
+      appState.page = context.type === "session" ? "active-parking" : "parking-lot-details";
       render();
       window.scrollTo({ top: 0, behavior: "auto" });
       return;
@@ -5737,7 +5737,13 @@ function renderDriverBottomNav() {
   const context = activeParkingContextForUser();
   const hasActiveParking = Boolean(context);
   const primaryInline = hasActiveParking && ["private_hourly", "municipal_blue_white"].includes(context.segment);
-  const firstTarget = hasActiveParking ? (primaryInline ? "parking-lot-details" : context.type === "reservation" ? "reserved-parking" : "active-parking") : "home";
+  const firstTarget = hasActiveParking
+    ? context.type === "session"
+      ? "active-parking"
+      : primaryInline
+        ? "parking-lot-details"
+        : "reserved-parking"
+    : "home";
   const items = [
     {
       key: "primary",
@@ -5758,7 +5764,7 @@ function renderDriverBottomNav() {
             item.key === "primary"
               ? hasActiveParking
                 ? primaryInline
-                  ? appState.page === "parking-lot-details" && appState.selectedLotId === context?.lotId
+                  ? (context?.type === "session" ? appState.page === "active-parking" : appState.page === "parking-lot-details" && appState.selectedLotId === context?.lotId)
                   : appState.page === "active-parking" || appState.page === "reserved-parking"
                 : appState.page === "home"
               : appState.page === item.target;
@@ -7096,15 +7102,7 @@ function renderDriverContent() {
     case "parking-lot-details":
       return renderLotDetails();
     case "active-parking":
-      if (activeSessionForUser()) {
-        const ctx = activeParkingContextForUser();
-        if (ctx && ["private_hourly", "municipal_blue_white"].includes(ctx.segment)) {
-          appState.selectedLotId = ctx.lotId;
-          appState.page = "parking-lot-details";
-          return renderLotDetails();
-        }
-      }
-      return activeSessionForUser() ? renderActiveParking() : renderHome();
+      return renderActiveParking();
     case "notifications":
       return renderNotifications();
     case "favorites":
