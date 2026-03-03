@@ -5960,9 +5960,9 @@ function renderLotDetails() {
     : `<div class="lot-quick-actions lot-quick-actions-${segment === "private_hourly" ? "3" : "2"}">
         ${
           segment === "private_hourly"
-            ? `<button class="btn lot-quick-btn" ${inlineState.mode === "blocked_other" || inlineState.mode === "active_here" ? "disabled" : ""} onclick="${inlineState.mode === "reserved_here" ? "appActions.releaseReservedParking()" : `appActions.openReserveConfirm('${lot.id}')`}">
+            ? `<button class="btn lot-quick-btn" ${inlineState.mode === "blocked_other" || inlineState.mode === "active_here" || inlineState.mode === "reserved_here" ? "disabled" : ""} onclick="appActions.openReserveConfirm('${lot.id}')">
                 <span class="lot-quick-icon">⏱</span>
-                <span>${inlineState.mode === "reserved_here" ? t("release_reserved") : t("save_parking")}</span>
+                <span>${t("save_parking")}</span>
               </button>`
             : ""
         }
@@ -6072,9 +6072,13 @@ function renderReservedParking() {
       <div class="row" style="margin-top:12px">
         <button class="btn primary" onclick="appActions.startParkingAtLot('${lot.id}')">${lot && lotSegmentType(lot) === "structured" ? t("simulate_entry") : t("start_parking_manual")}</button>
       </div>
-      <div style="margin-top:12px">
-        <button class="btn danger reserved-release-btn" onclick="appActions.releaseReservedParking()">${t("release_parking")}</button>
-      </div>
+      ${
+        lot && lotSegmentType(lot) === "structured"
+          ? `<div style="margin-top:12px">
+               <button class="btn danger reserved-release-btn" onclick="appActions.releaseReservedParking()">${t("release_parking")}</button>
+             </div>`
+          : ""
+      }
     </div>
   `;
 }
