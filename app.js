@@ -1243,6 +1243,13 @@ function t(key) {
   return I18N[lang][key] || I18N.en[key] || key;
 }
 
+function isDevelopmentPreview() {
+  const host = String(window.location.hostname || "").toLowerCase();
+  if (host.includes("git-develop")) return true;
+  if (host.includes("localhost")) return true;
+  return false;
+}
+
 function normalizeIsraeliPhone(raw) {
   const digits = String(raw || "").replace(/\D/g, "");
   if (/^05\d{8}$/.test(digits)) return `+972${digits.slice(1)}`;
@@ -4372,8 +4379,70 @@ const appActions = {
       render();
       return;
     }
-    alert(t("pending_start_failed"));
+    const forced = appActions.forceStartSingleSpotSession(lotId, requestedVehicleId);
+    if (!forced) {
+      alert(t("pending_start_failed"));
+      render();
+      return;
+    }
+    appState.page = "active-parking";
     render();
+  },
+
+  forceStartSingleSpotSession(lotId, vehicleId) {
+    const userUid = getCurrentUid();
+    const lot = getLotById(lotId);
+    if (!userUid || !lot || !isSingleSpotSupplySegment(lot)) return false;
+    const vehicle = appState.data.vehicles.find((v) => v.id === vehicleId && v.owner_id === userUid && v.is_active);
+    if (!vehicle) return false;
+    const existing = activeSessionForUser();
+    if (existing) return true;
+    let spot = appState.data.parkingSpots.find((s) => s.parking_lot_id === lotId && s.status === "available") || null;
+    if (!spot) {
+      spot = appState.data.parkingSpots.find((s) => s.parking_lot_id === lotId && ["assigned", "reserved_active"].includes(s.status)) || null;
+    }
+    if (!spot) return false;
+    const sessionId = uid("session");
+    const assignedAt = nowIso();
+    spot.status = "occupied";
+    spot.current_session_id = sessionId;
+    spot.current_vehicle_id = vehicle.id;
+    spot.assignment_expires_at = null;
+    appState.data.parkingSessions.unshift({
+      id: sessionId,
+      parking_lot_id: lotId,
+      spot_id: spot.id,
+      vehicle_id: vehicle.id,
+      user_id: userUid,
+      license_plate: vehicle.license_plate,
+      status: "active",
+      is_guest: false,
+      entry_time: assignedAt,
+      assignment_time: assignedAt,
+      parking_start_time: assignedAt,
+      exit_time: null,
+      manual_exit: false,
+      needs_charging: false,
+      total_amount: 0,
+      payment_status: "pending",
+      payment_id: null,
+      reservation_id: null,
+      entry_name: t("navigate"),
+      assigned_spot_code: getLotDisplayCode(lot),
+      navigation_instructions: `${t("navigate")} • ${lot.name}`,
+      navigation_steps: [],
+    });
+    appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
+    notify(getCurrentUid(), "parking_assigned", localizeStatus("active"), `${getLotDisplayCode(lot)} • ${lot.address}`);
+    addAudit("PARKING_STARTED_MANUAL", "user", "ParkingSession", sessionId, {
+      parking_lot_id: lotId,
+      spot_id: spot.id,
+      vehicle_id: vehicle.id,
+      new_state: { status: "active" },
+    });
+    normalizeSpots();
+    persist();
+    return true;
   },
 
   cancelPendingParkingStart() {
@@ -7438,6 +7507,7 @@ function render() {
       <header class="header ${isDriverHome ? "header-home-overlay" : ""}">
         <div class="brand brand-center">
           <strong>${t("app_title")}</strong>
+          ${isDevelopmentPreview() ? `<span class="dev-badge">פיתוח</span>` : ""}
         </div>
       </header>
       <div class="layout ${appState.mode === "driver" ? "driver-layout" : "admin-layout"}">
