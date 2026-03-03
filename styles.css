@@ -2224,6 +2224,20 @@ body.sheet-open {
   margin-top: 4px;
 }
 
+.pending-start-card {
+  display: grid;
+  gap: 12px;
+}
+
+.pending-start-card h2 {
+  margin: 0;
+}
+
+.pending-start-lot {
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .release-confirm-card p {
   margin: 8px 0;
   color: #475569;

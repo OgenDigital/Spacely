@@ -762,6 +762,11 @@ const I18N = {
     vehicle_picker_title: "Choose vehicle",
     vehicle_picker_subtitle: "Choose which vehicle you want to use for this parking action.",
     vehicle_picker_confirm: "Continue",
+    pending_start_title: "Start parking",
+    pending_start_subtitle: "Choose vehicle before starting your parking session.",
+    pending_start_confirm: "Start now",
+    pending_start_cancel: "Back to parking",
+    active_vehicle_label: "Active vehicle",
     auth_service_unavailable: "Authentication service is currently unavailable.",
     auth_invalid_phone: "Enter a valid Israeli phone number.",
     auth_invalid_otp: "Enter a valid 6-digit code.",
@@ -1168,6 +1173,11 @@ const I18N = {
     vehicle_picker_title: "בחר רכב לפעולה",
     vehicle_picker_subtitle: "בחר את הרכב שעבורו תרצה לשמור או להפעיל חניה.",
     vehicle_picker_confirm: "המשך",
+    pending_start_title: "הפעלת חניה",
+    pending_start_subtitle: "בחר רכב לפני תחילת סשן החניה.",
+    pending_start_confirm: "התחל עכשיו",
+    pending_start_cancel: "חזרה לחניה",
+    active_vehicle_label: "רכב פעיל",
     auth_service_unavailable: "שירות האימות אינו זמין כרגע.",
     auth_invalid_phone: "יש להזין מספר טלפון ישראלי תקין.",
     auth_invalid_otp: "יש להזין קוד אימות בן 6 ספרות.",
@@ -2091,6 +2101,10 @@ const appState = {
     open: false,
     lotId: null,
     action: null,
+    selectedVehicleId: null,
+  },
+  pendingParkingStart: {
+    lotId: null,
     selectedVehicleId: null,
   },
   homeUnifiedMode: true,
@@ -3231,6 +3245,9 @@ const appActions = {
     appState.releaseConfirmOpen = false;
     appState.reserveConfirmOpen = false;
     appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
+    if (page !== "active-parking") {
+      appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
+    }
     appState.issueMenuOpen = false;
     if (page !== "profile") appState.profileSection = "menu";
     if (page === "profile" && appState.auth.status === "signed_in" && !appState.onboarding.completed) {
@@ -3488,6 +3505,7 @@ const appActions = {
     } finally {
       appState.auth.loading = false;
       appState.vehiclePicker = { open: false, lotId: null, action: null, selectedVehicleId: null };
+      appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
       render();
     }
   },
@@ -4329,6 +4347,30 @@ const appActions = {
     appActions.simulateLprEntry(lotId, vehicleId);
   },
 
+  selectPendingStartVehicle(vehicleId) {
+    appState.pendingParkingStart.selectedVehicleId = vehicleId || null;
+    render();
+  },
+
+  confirmPendingParkingStart() {
+    const lotId = appState.pendingParkingStart?.lotId;
+    const vehicleId = appState.pendingParkingStart?.selectedVehicleId;
+    if (!lotId || !vehicleId) return;
+    appActions.simulateLprEntry(lotId, vehicleId, { targetPage: "active-parking" });
+  },
+
+  cancelPendingParkingStart() {
+    const lotId = appState.pendingParkingStart?.lotId;
+    appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
+    if (lotId) {
+      appState.selectedLotId = lotId;
+      appState.page = "parking-lot-details";
+    } else {
+      appState.page = "home";
+    }
+    render();
+  },
+
   releaseReservedParking() {
     const reservation = activeReservationHoldForUser();
     if (!reservation) {
@@ -4597,13 +4639,24 @@ const appActions = {
       return;
     }
     if (isSingleSpotSupplySegment(lot)) {
-      appActions.openVehiclePicker(lotId, "start");
+      const uid = getCurrentUid();
+      const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+      if (!vehicles.length) {
+        appActions.requireDefaultVehicleInProfile();
+        return;
+      }
+      const preferred = vehicles.find((v) => v.is_default) || vehicles[0];
+      appState.pendingParkingStart = { lotId, selectedVehicleId: preferred?.id || null };
+      appState.activeSheet = null;
+      appState.lotModalId = null;
+      appState.page = "active-parking";
+      render();
       return;
     }
     appActions.simulateLprEntry(lotId);
   },
 
-  simulateLprEntry(lotId, forcedVehicleId = null) {
+  simulateLprEntry(lotId, forcedVehicleId = null, options = {}) {
     const uid = getCurrentUid();
     const guard = canStartOrReserve();
     if (!uid || (!guard.ok && guard.reason !== "existing_active")) {
@@ -4628,12 +4681,13 @@ const appActions = {
     const activeSession = activeSessionForUser();
     const holdReservation = activeReservationHoldForUser();
     appState.reserveConfirmOpen = false;
+    const forceActivePage = options?.targetPage === "active-parking";
     if (activeSession) {
       alert(t("existing_parking_block"));
       const activeLot = getLotById(activeSession.parking_lot_id);
       if (["private_hourly", "municipal_blue_white"].includes(lotSegmentType(activeLot))) {
         appState.selectedLotId = activeSession.parking_lot_id;
-        appState.page = "parking-lot-details";
+        appState.page = forceActivePage ? "active-parking" : "parking-lot-details";
       } else {
         appState.page = "active-parking";
       }
@@ -4645,7 +4699,7 @@ const appActions = {
       const holdLot = getLotById(holdReservation.parking_lot_id);
       if (["private_hourly", "municipal_blue_white"].includes(lotSegmentType(holdLot))) {
         appState.selectedLotId = holdReservation.parking_lot_id;
-        appState.page = "parking-lot-details";
+        appState.page = forceActivePage ? "active-parking" : "parking-lot-details";
       } else {
         appState.page = "reserved-parking";
       }
@@ -4720,8 +4774,9 @@ const appActions = {
         appState.selectedLotId = lotId;
         appState.activeSheet = null;
         appState.lotModalId = null;
-        appState.page = "parking-lot-details";
+        appState.page = forceActivePage ? "active-parking" : "parking-lot-details";
       }
+      appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
       render();
       return;
     }
@@ -4784,8 +4839,9 @@ const appActions = {
       appState.selectedLotId = lotId;
       appState.activeSheet = null;
       appState.lotModalId = null;
-      appState.page = "parking-lot-details";
+      appState.page = forceActivePage ? "active-parking" : "parking-lot-details";
     }
+    appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
     render();
   },
 
@@ -5910,7 +5966,42 @@ function renderActiveParking() {
   checkTimeouts();
   const uid = getCurrentUid();
   const session = activeSessionForUser();
+  const pendingStart = appState.pendingParkingStart || { lotId: null, selectedVehicleId: null };
   if (!session) {
+    if (pendingStart.lotId) {
+      const lot = getLotById(pendingStart.lotId);
+      const vehicles = appState.data.vehicles.filter((v) => v.owner_id === uid && v.is_active);
+      if (!lot || !vehicles.length) {
+        appState.pendingParkingStart = { lotId: null, selectedVehicleId: null };
+      } else {
+        return `
+          <div class="card pending-start-card">
+            <h2>${t("pending_start_title")}</h2>
+            <div class="muted">${t("pending_start_subtitle")}</div>
+            <div class="pending-start-lot">${lot.name} • ${lot.address}</div>
+            <div class="vehicle-picker-grid">
+              ${vehicles
+                .map((vehicle) => {
+                  const selected = pendingStart.selectedVehicleId === vehicle.id;
+                  const icon = vehicle.is_electric ? "bolt" : "car";
+                  return `
+                    <button class="vehicle-picker-item ${selected ? "selected" : ""}" onclick="appActions.selectPendingStartVehicle('${vehicle.id}')">
+                      <span class="vehicle-picker-icon ${vehicle.is_electric ? "electric" : ""}">${navIcon(icon)}</span>
+                      <strong>${vehicleDisplayName(vehicle) || t("vehicle")}</strong>
+                      <small>${vehicle.license_plate}</small>
+                    </button>
+                  `;
+                })
+                .join("")}
+            </div>
+            <div class="row vehicle-picker-actions">
+              <button class="btn" onclick="appActions.cancelPendingParkingStart()">${t("pending_start_cancel")}</button>
+              <button class="btn primary" onclick="appActions.confirmPendingParkingStart()">${t("pending_start_confirm")}</button>
+            </div>
+          </div>
+        `;
+      }
+    }
     const activeReservation = appState.data.reservations.find((r) => r.user_id === uid && r.status === "confirmed");
     return `
       <div class="card">
@@ -5932,6 +6023,7 @@ function renderActiveParking() {
 
   const lot = getLotById(session.parking_lot_id);
   const isStructured = lotSegmentType(lot) === "structured";
+  const sessionVehicle = appState.data.vehicles.find((v) => v.id === session.vehicle_id);
   const spot = appState.data.parkingSpots.find((s) => s.id === session.spot_id);
   const assignedSpot = session.assigned_spot_code || (isSingleSpotSupplySegment(lot) ? getLotDisplayCode(lot) : compactSpotCode(spot));
   const start = session.parking_start_time || session.assignment_time;
@@ -5959,6 +6051,10 @@ function renderActiveParking() {
       <div id="active-timer-cost" class="timer-sticky-cost">${t("estimated_cost")}: ${money(est.total)}</div>
     </div>
     <div class="card">
+      <div class="row">
+        <strong>${t("active_vehicle_label")}</strong>
+        <span class="muted">${sessionVehicle ? `${vehicleDisplayName(sessionVehicle)} • ${sessionVehicle.license_plate}` : session.license_plate || "—"}</span>
+      </div>
       ${
         isStructured
           ? `<h3>${t("textual_navigation")}</h3>
