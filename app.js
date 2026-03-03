@@ -4786,7 +4786,12 @@ const appActions = {
       // Relax constraints for demo so flow can continue.
       spot = assignSpot(lotId, { ...vehicle, special_conditions: [], is_electric: false }, { needs_charging: false });
     }
+    if (!spot && !isStructured) {
+      // For single-spot flows (private / blue-white), allow a final fallback to any free spot in lot.
+      spot = appState.data.parkingSpots.find((s) => s.parking_lot_id === lotId && s.status === "available") || null;
+    }
     if (!spot) {
+      alert(t("reservation_no_spot"));
       return;
     }
 
