@@ -6193,26 +6193,32 @@ function renderActiveParking() {
           : ""
       }
       <div class="stack" style="margin-top:12px">
-        <button class="btn warn" onclick="appActions.toggleIssueMenu()">${t("report_issue_quick")}</button>
         ${
-          appState.issueMenuOpen
-            ? `<div class="issue-options">
-                <div class="muted">${t("choose_issue_type")}</div>
-                <div class="muted issue-auto-note">${t("issue_auto_reassign_info")}</div>
-                <div class="issue-options-grid">
-                  <button class="btn" onclick="appActions.quickReportIssue('already_occupied')">${localizeIssueType("already_occupied")}</button>
-                  <button class="btn" onclick="appActions.quickReportIssue('crooked_parking_by_other')">${localizeIssueType("crooked_parking_by_other")}</button>
-                  <button class="btn" onclick="appActions.quickReportIssue('blocked')">${localizeIssueType("blocked")}</button>
-                  <button class="btn" onclick="appActions.quickReportIssue('spot_too_small')">${localizeIssueType("spot_too_small")}</button>
-                  <button class="btn" onclick="appActions.quickReportIssue('cant_find_spot')">${localizeIssueType("cant_find_spot")}</button>
-                  <button class="btn" onclick="appActions.quickReportIssue('other')">${localizeIssueType("other")}</button>
-                </div>
-                <button class="btn" style="margin-top:8px" onclick="appActions.openSupportCall()">${t("call_support")}</button>
-              </div>`
-            : ""
+          isStructured
+            ? `
+              <button class="btn warn" onclick="appActions.toggleIssueMenu()">${t("report_issue_quick")}</button>
+              ${
+                appState.issueMenuOpen
+                  ? `<div class="issue-options">
+                      <div class="muted">${t("choose_issue_type")}</div>
+                      <div class="muted issue-auto-note">${t("issue_auto_reassign_info")}</div>
+                      <div class="issue-options-grid">
+                        <button class="btn" onclick="appActions.quickReportIssue('already_occupied')">${localizeIssueType("already_occupied")}</button>
+                        <button class="btn" onclick="appActions.quickReportIssue('crooked_parking_by_other')">${localizeIssueType("crooked_parking_by_other")}</button>
+                        <button class="btn" onclick="appActions.quickReportIssue('blocked')">${localizeIssueType("blocked")}</button>
+                        <button class="btn" onclick="appActions.quickReportIssue('spot_too_small')">${localizeIssueType("spot_too_small")}</button>
+                        <button class="btn" onclick="appActions.quickReportIssue('cant_find_spot')">${localizeIssueType("cant_find_spot")}</button>
+                        <button class="btn" onclick="appActions.quickReportIssue('other')">${localizeIssueType("other")}</button>
+                      </div>
+                      <button class="btn" style="margin-top:8px" onclick="appActions.openSupportCall()">${t("call_support")}</button>
+                    </div>`
+                  : ""
+              }
+              <button class="btn danger" onclick="appActions.openReleaseConfirm()">${t("release_parking")}</button>
+              <button class="btn primary" onclick="appActions.simulateExit()">${t("simulate_exit")}</button>
+            `
+            : `<button class="btn danger" onclick="appActions.manualExit()">${t("end_parking")}</button>`
         }
-        <button class="btn danger" onclick="appActions.openReleaseConfirm()">${t("release_parking")}</button>
-        <button class="btn primary" onclick="appActions.simulateExit()">${t("simulate_exit")}</button>
       </div>
     </div>
   `;
